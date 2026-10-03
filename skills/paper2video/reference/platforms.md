@@ -27,6 +27,7 @@ Vertical cut: build it **natively for the phone** (`reference/vertical.md`): sam
 `out/` holds only the current version of each file. Review stills, contact sheets and auditions go to `review/`.
 
 ## Covers
+- What a cover is for: one striking real picture (a figure of the paper, cropped to its most arresting panel) plus the counterintuitive claim in two short spoken-style lines at huge size — not the paper's title. In one channel's numbers, the film whose cover did this best (a paper figure + 「瞎猜权重 / 也能后训练」, "random guessing works for post-training") clearly outperformed the others.
 - `scripts/covers.sh` renders the whole set from the stills `Cover-Bili`, `Cover-EN`, `Cover-ZH-3x4`, `Cover-ZH-9x16` (`Cover-EN-3x4`, `Cover-EN-9x16`); pass `name=StillId` for other ids.
 - YouTube: 16:9 1920×1080 (under 2 MB).
 - **Bilibili takes ONE cover image** but shows it twice: cropped to **4:3 in the home feed** and as **16:9 on the video page and the user's space**. Make one 16:9 master (`Cover-Bili`, rendered with `--scale=2` → 3840×2160, exported as JPEG ~1 MB) with every readable element and the key visual inside the centred 4:3 area (x 240–1680 of 1920) and only background extension in the side bands; check both crops (`covers.sh` writes them as `bilibili_preview_4x3.jpg` / `_16x9.jpg`) and tell the user to keep the uploader's 4:3 crop centred. Nothing important in the bottom-right corner (duration badge). Don't hand over separate 16:9 / 16:10 / 4:3 files for Bilibili — only one can be uploaded.
