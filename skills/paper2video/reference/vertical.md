@@ -56,6 +56,11 @@ Motion on a card or a figure (zoom into a region, pan) is fine and often needed;
 one panel from the vector PDF at ≥ 3× resolution, show it as large as the frame allows, and zoom / pan to the part
 being discussed while it is said; re-letter the key labels or numbers on top, large, if the originals are small.
 
+**Websites and app screens on a phone**: don't squeeze a desktop-width screenshot into a short card — the text
+becomes unreadable and the sides get cut. Capture the page at a phone viewport (e.g. 430×932 at 3×; responsive sites
+render their mobile layout), show it large like a phone screen filling the middle of the frame, scroll or zoom to the
+button or line being described, and keep its content clear of the caption band.
+
 ## Pacing and structure
 - **Frame 0 is the hook**: the subject on screen with a claim of ≤ 7 words at ≥ 110 px — no logo, black frame or fade-in.
 - **Then the title card** (same scene as the 16:9 cut, `TitleCard` lays itself out for 9:16): paper title, authors, institution, claim — on screen by ~20 s; with `shot` the paper's first page appears as a large white sheet right under the title while it is read, then slides down into the band under the captions (`beats.shotMove`, ≥ 3 s after it appears) and the authors, institution and claim appear where it was.
