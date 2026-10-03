@@ -27,6 +27,7 @@ Vertical cut: build it **natively for the phone** (`reference/vertical.md`): sam
 `out/` holds only the current version of each file. Review stills, contact sheets and auditions go to `review/`.
 
 ## Covers
+- A small source badge helps viewers trust the claim: the institution ("Apple 新论文") or a confirmed venue ("NeurIPS 2025", "ACL 2026"), never a logo. A plain headline number works as a claim too ("AIME 61.9 → 73.3", setting in the description).
 - What a cover is for: one striking real picture (a figure of the paper, cropped to its most arresting panel) plus the counterintuitive claim in two short spoken-style lines at huge size — not the paper's title. In one channel's numbers, the film whose cover did this best (a paper figure + 「瞎猜权重 / 也能后训练」, "random guessing works for post-training") clearly outperformed the others.
 - `scripts/covers.sh` renders the whole set from the stills `Cover-Bili`, `Cover-EN`, `Cover-ZH-3x4`, `Cover-ZH-9x16` (`Cover-EN-3x4`, `Cover-EN-9x16`); pass `name=StillId` for other ids.
 - YouTube: 16:9 1920×1080 (under 2 MB).
