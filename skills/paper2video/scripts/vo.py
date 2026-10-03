@@ -971,8 +971,8 @@ def build(args):
         if credits > remaining:
             sys.exit("ABORT: batch would exceed the remaining Fish Audio API credits")
     est = estimate_length(scenes, tl, cfg, defaults, strip)
-    print(f"[length] ≈ {est // 60:.0f}:{est % 60:02.0f} from reading speed (target ≤ 4:00 unless the user asked for more; "
-          f"trim the script before paying for voice if it is over)")
+    print(f"[length] ≈ {est // 60:.0f}:{est % 60:02.0f} from reading speed (check it against the planned length; "
+          f"trim filler, not explanation, before paying for voice)")
     if args.dry_run:
         return
 

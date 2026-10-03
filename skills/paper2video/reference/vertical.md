@@ -60,11 +60,11 @@ being discussed while it is said; re-letter the key labels or numbers on top, la
 - **Frame 0 is the hook**: the subject on screen with a claim of ≤ 7 words at ≥ 110 px — no logo, black frame or fade-in.
 - **Then the title card** (same scene as the 16:9 cut, `TitleCard` lays itself out for 9:16): paper title, authors, institution, claim — on screen by ~20 s; with `shot` the paper's first page appears as a large white sheet right under the title while it is read, then slides down into the band under the captions (`beats.shotMove`, ≥ 3 s after it appears) and the authors, institution and claim appear where it was.
 - A visible change every 1–3 s, on the voice anchors; calm motion (fade/rise, draw-on, swap, highlight), no full-frame zoom.
-- Same content as the 16:9 film by default: both cuts tell the whole story, both as short as clarity allows — the
-  length comes from a tight script, not from dropping scenes in the vertical (a cut that skipped too much was hard to
-  follow). Skip a scene (`V_DROP`) only when it cannot work on a phone at all (a dense derivation, a figure that needs
-  the full width), and check that the next scene's first line still follows. Chinese knowledge-vertical norm 1–3 min;
-  Shorts ≤ 3 min.
+- Same content as the 16:9 film, technical part included: both cuts tell the whole story with the same voice-over;
+  a vertical that skipped the technical scenes was too short to follow (user feedback). Redesign those scenes for the
+  phone instead of dropping them. Skip a scene (`V_DROP`) only when it cannot work on a phone at all (a dense derivation, a figure that needs
+  the full width), and check that the next scene's first line still follows. For YouTube Shorts (≤ 3 min) make a separate
+  shorter edit only if the user wants one.
 - End on a frame that leads back to the first one (the clip loops), not on a credits card; a question to the viewer
   works well as the last line.
 - On Bilibili, knowledge videos are still mostly landscape: the vertical cut is a companion to the 16:9 upload.
