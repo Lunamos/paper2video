@@ -907,6 +907,9 @@ def build(args):
     cfg = dict(script["voices"][cut])
     backend = args.backend or cfg.get("backend", "elevenlabs")
     tl = cfg.get("lang", cut)  # text language: a variant cut can read another cut's text with its own voice
+    # spoken language (TTS language code, ASR, scoring): "language" when the text-block key is not a language
+    # (e.g. a cut "short" with its own "short" blocks); otherwise the text-block key, as before
+    sl = cfg.get("language", tl)
     if backend != "none":
         reexec_with(["numpy"])
     voice, model, stability = args.voice or cfg.get("voice"), args.model or cfg.get("model", "eleven_v4"), cfg.get("stability", 0.5)
@@ -947,7 +950,7 @@ def build(args):
         for sc in scenes:
             text = " ".join(l["say"] for l in prepare_lines(sc[tl], strip))
             for seed in pool[sc["id"]]:
-                if not (CACHE / "elevenlabs" / f"{el_key(text, voice, model, stability, seed, tl)}.mp3").exists():
+                if not (CACHE / "elevenlabs" / f"{el_key(text, voice, model, stability, seed, sl)}.mp3").exists():
                     todo.append((sc["id"], seed))
                     chars += len(text)
         billable = round(chars * COST.get(model, 1.0))
@@ -962,7 +965,7 @@ def build(args):
         for sc in scenes:
             text = " ".join(l["say"] for l in prepare_lines(sc[tl], strip))
             for seed in pool[sc["id"]]:
-                if not (CACHE / "fish" / f"{fish_key(cfg, text, tl, seed)}.{fish_request(cfg, text, tl)['format']}").exists():
+                if not (CACHE / "fish" / f"{fish_key(cfg, text, sl, seed)}.{fish_request(cfg, text, sl)['format']}").exists():
                     todo += 1
                     credits += fish_cost(text, cfg)
         remaining, prof = fish_quota(cfg)
@@ -998,22 +1001,22 @@ def build(args):
         for seed in pool[sc["id"]] if backend != "none" else []:
             asr_result = None
             if backend == "elevenlabs":
-                key, audio, times, fresh = el_synth(text, voice, model, stability, seed, tl)
+                key, audio, times, fresh = el_synth(text, voice, model, stability, seed, sl)
             elif backend == "edge":
-                key, audio, times, fresh = edge_synth(text, cfg, tl)
+                key, audio, times, fresh = edge_synth(text, cfg, sl)
             elif backend == "gpt-sovits":
-                key, audio, times, fresh, asr_result = gs_synth(text, cfg, tl, seed)
+                key, audio, times, fresh, asr_result = gs_synth(text, cfg, sl, seed)
             elif backend == "fish":
-                key, audio, times, fresh, asr_result, used = fish_synth(text, cfg, tl, seed)
+                key, audio, times, fresh, asr_result, used = fish_synth(text, cfg, sl, seed)
                 spent += used
             else:
-                key, audio, times, fresh, asr_result = recorded_take(cut, sc["id"], text, tl, cfg)
+                key, audio, times, fresh, asr_result = recorded_take(cut, sc["id"], text, sl, cfg)
             new_requests += fresh
             wd = work / f"{sc['id']}_{seed if seed is not None else backend}"
             wd.mkdir(exist_ok=True)
             final, lj, dms = process_take(sc["id"], lines, text, times, audio, wd, cfg, tighten)
             engine = asr_engine(cfg, backend, args.asr and asr_result is None)
-            q = qa_take(key, audio, text, tl, cfg.get("f0Max", 420.0), engine, asr_result)
+            q = qa_take(key, audio, text, sl, cfg.get("f0Max", 420.0), engine, asr_result)
             takes.append({"seed": seed, "final": final, "lines": lj, "durationMs": dms, "qa": q, "fresh": fresh,
                           "missing": missing_terms({"qa": q}, terms, strip_tags(text))})
         best = pick(takes, {"pick": block.get("pick", sc.get("pick"))}, cut, sc["id"], report, picks.get(sc["id"]))

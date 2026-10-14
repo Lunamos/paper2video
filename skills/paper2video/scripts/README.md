@@ -62,6 +62,9 @@ and are never printed.
   into frames so animations land on the spoken word.
 - Audio tags (`[curious]`, `[excited]`, `[chuckles]` ...) only reach ElevenLabs v3; other backends strip them.
 - `recorded`: put narration at `recordings/<cut>/<scene_id>.wav|mp3|m4a|flac`.
+- `"language"` on a voice: the spoken language code (TTS `language_code`, ASR, scoring) when the cut's text-block key is
+  not a language — e.g. a short cut `"short": {"lang": "short", "language": "en", ...}` reading its own `"short"` blocks.
+  Defaults to the text-block key.
 - `notes/vo_picks.<cut>.json` (`{"s_intro": 23}`) pins an ElevenLabs take by seed.
 - `keyTerms` (voice or scene block): accepted spellings joined by `|` (`"熵|商"` when `tts` respells a rare
   character); compared by count between the spoken text and the ASR transcript.
