@@ -148,6 +148,7 @@ def main():
         import voice_qa
         script = load_script()
         tl = text_lang(script, a.cut)
+        sl = script.get("voices", {}).get(a.cut, {}).get("language", tl)  # spoken language (see vo.py "language")
         scenes = [s for s in script["scenes"] if tl in s]
         caption = " ".join(strip_tags(l["text"]) for s in scenes for l in s[tl]["lines"])
         spoken = " ".join(strip_tags(l.get("tts", l["text"])) for s in scenes for l in s[tl]["lines"])
@@ -155,8 +156,8 @@ def main():
             wav = pathlib.Path(td) / "mix.wav"
             subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-ac", "1", "-ar", "16000", str(wav)], check=True)
             print(f"asr       transcribing the full mix ({a.asr}) ...", flush=True)
-            r = voice_qa.asr(str(wav), tl, a.asr, a.whisper_model)
-        sc_cap, sc_say = voice_qa.score(caption, tl, r), voice_qa.score(spoken, tl, r)
+            r = voice_qa.asr(str(wav), sl, a.asr, a.whisper_model)
+        sc_cap, sc_say = voice_qa.score(caption, sl, r), voice_qa.score(spoken, sl, r)
         best = min((sc_cap, sc_say), key=lambda x: x["err"])
         cfg = script["voices"][a.cut]
         terms = cfg.get("keyTerms", []) + [t for s in scenes for t in s[tl].get("keyTerms", [])]
