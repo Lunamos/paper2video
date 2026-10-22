@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Export the captions of a cut as .srt (YouTube CC, Bilibili subtitles, editing apps).
 
-Timing and paging mirror the template's src/components/Captions.tsx: one page ~ one line
-(58 characters for latin scripts; 18 for CJK, where full-width punctuation at a page end is
-dropped and mid-page punctuation becomes a space, as in Chinese subtitle practice).
-Pages break at clause punctuation first, then evenly. Each cue ends 0.6 s after its last word
-(or when the next cue starts).
+Pages are the burned-in 16:9 captions, laid out by the template's own code (scripts/caption_layout.mjs ->
+src/typography/captions.ts: one line per page, ≤ 18 CJK / ≈ 58 Latin characters, clause boundaries first, never
+inside a word, kinsoku, no orphan page). CJK: full-width punctuation at a page end is dropped and mid-page
+punctuation becomes a space, as in Chinese subtitle practice. A project without src/typography falls back to the
+older paging below (which mirrors its older Captions.tsx). Each cue ends 0.6 s after its last word (or when the next
+cue starts).
 
 Usage: python3 scripts/srt.py <cut> [--out out/<cut>.srt] [--fps 30]
 """
@@ -15,10 +16,11 @@ import argparse
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from common import CJK, ROOT, frames, is_cjk_lang, load_vo, project_fps, scene_spans  # noqa: E402
+from common import CJK, ROOT, SCRIPTS, frames, is_cjk_lang, load_vo, project_fps, scene_spans  # noqa: E402
 
 LIMIT_LATIN, LIMIT_CJK = 58, 18
 HOLD = 0.6  # s a cue stays up after its last word
@@ -69,6 +71,15 @@ def paginate(words, cjk):
     return pages
 
 
+def template_pages(cut):
+    """{"<scene>:<line>": layout} of the burned-in 16:9 captions (caption_layout.mjs), or None if unavailable."""
+    r = subprocess.run(["node", str(SCRIPTS / "caption_layout.mjs"), cut, "--kind", "wide"], capture_output=True, text=True, cwd=ROOT)
+    if r.returncode != 0:
+        print(f"NOTE: {r.stderr.strip().splitlines()[-1] if r.stderr.strip() else 'caption_layout.mjs failed'}; using the older paging")
+        return None
+    return {l["key"]: l for l in json.loads(r.stdout)["layouts"]["wide"]}
+
+
 def text_of(ws, cjk):
     out = ""
     for i, w in enumerate(ws):
@@ -93,12 +104,20 @@ def cues(cut, fps):
     vo = load_vo(cut)
     cjk = is_cjk_lang(vo["meta"].get("textLang", cut))
     pages = []
+    table = template_pages(cut)
     for s, t0, _ in scene_spans(vo, fps):
         lead = s["leadInMs"]
         for l in s["lines"]:
-            ws = [{"w": w["w"], "sp": w.get("sp", 0), "from": t0 + frames(lead + w["startMs"], fps),
-                   "to": t0 + frames(lead + w["endMs"], fps)} for w in l["words"]]
-            for pg in paginate(ws, cjk) if ws else []:
+            lay = table.get(f"{s['id']}:{l['id']}") if table else None
+            if lay:
+                ws = [{"w": w, "sp": sp, "from": t0 + frames(lead + a, fps), "to": t0 + frames(lead + b, fps)}
+                      for w, sp, (a, b) in zip(lay["words"], lay["sp"], lay["ms"])]
+                pgs = [ws[pg[0][0]:pg[-1][1]] for pg in lay["pages"]]
+            else:
+                ws = [{"w": w["w"], "sp": w.get("sp", 0), "from": t0 + frames(lead + w["startMs"], fps),
+                       "to": t0 + frames(lead + w["endMs"], fps)} for w in l["words"]]
+                pgs = paginate(ws, cjk) if ws else []
+            for pg in pgs:
                 pages.append((max(0, pg[0]["from"]), pg[-1]["to"], text_of(pg, cjk)))
     hold = round(HOLD * fps)
     return [(a, min(b + hold, pages[i + 1][0] if i + 1 < len(pages) else b + hold), txt) for i, (a, b, txt) in enumerate(pages)]

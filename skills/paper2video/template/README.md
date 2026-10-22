@@ -39,6 +39,8 @@ src/
                               optional `shot`: the paper's first page as a sheet of paper, see below)
   components/Hand.tsx         HandLoop, HandCheck, HandNote (hand-drawn annotations)
   components/Captions.tsx     global word-highlighted captions
+  typography/                 line breaking for all on-screen text: breaks.ts (pure rules + layout), captions.ts
+                              (caption pages, shared with scripts/caption_layout.mjs), ZhText.tsx (Words, typo, useNearFit)
   timeline/timeline.ts        vo JSON types, voFiles map, buildTimeline
   timeline/SceneContext.tsx   useAnchor, useAnchors, useLine, useLang, useCut, useSceneDuration, useChapter
   timeline/sfx.ts             sound-effect cues, whooshes, music drop-outs (empty by default)
@@ -182,11 +184,20 @@ all a card needs.
   `beats.shot`.
 - Not used on the covers. Render stills of both cuts around the beats to check.
 
-## Captions
+## Captions and typography
 
-`Captions` pages each line at clause punctuation (EN ≤ 58 chars, ZH ≤ 18 chars per page), highlights words as they are
-spoken, and follows the Chinese subtitle convention: no commas/full stops on screen (inner ones become a space, final
-ones are dropped). Caption text is the `words[].w` from the vo JSON, so fix caption typos in `scenes.json` `text`.
+`Captions` (16:9: one line per page, EN ≤ 58 chars, ZH ≤ 18 chars) and `VCaptions` (9:16: ≤ 2 lines × 9 / 18) get
+their pages from `typography/captions.ts`: clause boundaries first, never inside a word (jieba table
+`public/data/zh_breaks.json` from `scripts/zh_breaks.py` ∩ `Intl.Segmenter`), numbers with units and model names whole,
+kinsoku, no orphan, balanced lines, ≤ 10 % overrun before a new page. They highlight words as they are spoken and follow
+the Chinese subtitle convention: no commas/full stops on screen (inner ones become a gap, final ones are dropped).
+Caption text is the `words[].w` from the vo JSON, so fix caption typos in `scenes.json` `text`.
+
+Wrapping text elsewhere: `<div style={{ ...typo.block }}><Words>{text}</Words></div>` (`typography/ZhText.tsx`) keeps
+words whole, balances the lines (`text-wrap: balance`), applies strict kinsoku and CJK–Latin spacing
+(`text-autospace`) and drops a trailing ，。; `useNearFit` keeps a block that overflows one line by ≤ 10 % on one line.
+`Headline`, `TitleCard`, `VHead` and `VSub` already do this. `python3 scripts/text_check.py --cut zh` reports what is
+still broken (rules: `reference/visual-style.md` "Typography").
 
 ## Audio
 
@@ -215,6 +226,8 @@ ones are dropped). Caption text is the `words[].w` from the vo JSON, so fix capt
 ## Chinese font subset
 
 `theme/fonts-zh.json` = `{ "family": "...", "files": { "400": "fonts/zh/NotoSansSC-400.woff2", ... },
-"hand"?: { "family": "...", "file": "fonts/zh/<hand>.woff2" } }` with paths under `public/`. Generate a subset
-containing exactly the characters of the ZH text (scenes.json + scene TXT objects) and re-run it whenever Chinese text
-changes. With `"files": {}` the system CJK font is used.
+"hand"?: { "family": "...", "file": "fonts/zh/<hand>.woff2" } }` with paths under `public/`. Generate it with
+`scripts/zh_font_subset.py`: every displayed character the Latin fonts lack (scenes.json, `public/data/*.json`, `src/`);
+the manifest records them in `text`, so `zh_font_subset.py --check` (run by `finalize.sh` / `covers.sh`) rebuilds a
+stale subset and fails, listing each character the font lacks, instead of letting it fall back to a system font. With
+`"files": {}` the system CJK font is used (the check builds the subset as soon as there is CJK text).

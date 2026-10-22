@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AbsoluteFill, continueRender, delayRender, interpolate } from "remotion";
 import "../theme/katex-colors.css";
 import { clamp, color, ease, font, layout, type } from "../theme";
+import { typo, Words } from "../typography/ZhText";
 
 // ---------------------------------------------------------------- animation helpers
 /** 0..1 progress of an animation that starts at `start` and lasts `dur` frames (clamped, eased). */
@@ -132,10 +133,11 @@ export const Headline: React.FC<{ children: React.ReactNode; p?: number; top?: n
       fontSize: size,
       color: color.text,
       letterSpacing: "-0.01em",
+      ...typo.block,
       ...appear(p, 18),
     }}
   >
-    {children}
+    <Words>{children}</Words>
   </div>
 );
 

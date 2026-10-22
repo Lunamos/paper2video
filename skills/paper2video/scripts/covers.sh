@@ -10,12 +10,24 @@
 # Usage: scripts/covers.sh [name=StillId ...]
 #   defaults: bilibili=Cover-Bili youtube=Cover-EN zh_3x4=Cover-ZH-3x4 zh_9x16=Cover-ZH-9x16 en_3x4=Cover-EN-3x4 en_9x16=Cover-EN-9x16
 #   e.g. scripts/covers.sh youtube=Cover2-EN          (override one id; name= with no id skips that cover)
-# A still id that does not exist is reported and skipped.
+# A still id that does not exist is reported and skipped. Runs the font check first (as finalize.sh; FONT_CHECK=0 skips).
 set -euo pipefail
 cd "${PAPER_VIDEO_ROOT:-$(dirname "$0")/..}"
 # name=id pairs; later pairs (the arguments) win. Plain variables only: macOS ships bash 3.2 (no associative arrays).
 PAIRS="bilibili=Cover-Bili youtube=Cover-EN zh_3x4=Cover-ZH-3x4 zh_9x16=Cover-ZH-9x16 en_3x4=Cover-EN-3x4 en_9x16=Cover-EN-9x16 $*"
 still_id() { local id="" kv; for kv in $PAIRS; do [[ ${kv%%=*} == "$1" ]] && id=${kv#*=}; done; echo "$id"; }
+# every displayed CJK character must be in the local font subset (rebuilt here when the text changed), or the render
+# would silently fall back to a system font for it. FONT_CHECK=0 skips.
+font_check() {
+  [[ "${FONT_CHECK:-1}" == 0 ]] && return 0
+  local m lang
+  for m in src/theme/fonts-*.json; do
+    [[ -e "$m" ]] || continue
+    lang=$(basename "$m" .json); lang=${lang#fonts-}
+    python3 scripts/zh_font_subset.py --check --lang "$lang" || { echo "font check failed: fix the characters above (or FONT_CHECK=0)"; exit 1; }
+  done
+}
+font_check
 mkdir -p out/covers
 TMP=$(mktemp -d "${PAPER_VIDEO_TMPDIR:-${TMPDIR:-/tmp}}/covers.XXXXXX")  # the workspace drive when PAPER_VIDEO_TMPDIR is set
 trap 'rm -rf "$TMP"' EXIT

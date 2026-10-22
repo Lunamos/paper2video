@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Render a finished cut and master its loudness for upload.
+#   0. font check: every displayed CJK character is in the local font subset (rebuilt if the text changed)
 #   1. npx remotion render <composition>  (H.264, CRF 15)
 #   2. two-pass ffmpeg loudnorm to -14 LUFS integrated / -1.5 dBTP (YouTube, Bilibili, most platforms);
 #      video stream copied, audio -> AAC 320k 48 kHz, +faststart for streaming
@@ -8,12 +9,24 @@
 #
 # Usage: scripts/finalize.sh <CompositionId> [output-name] [CoverStillId]
 #   e.g. scripts/finalize.sh VIDEO-EN video_en Cover-EN   -> out/video_en.mp4, out/video_en_cover.png
-# Env: CRF (default 15), CONCURRENCY (default: Remotion's), PROPS (JSON input props), KEEP_RAW=1
+# Env: CRF (default 15), CONCURRENCY (default: Remotion's), PROPS (JSON input props), KEEP_RAW=1, FONT_CHECK=0
 set -euo pipefail
 COMP=${1:?usage: finalize.sh <CompositionId> [output-name] [CoverStillId]}
 NAME=${2:-$COMP}
 COVER=${3:-}
 cd "${PAPER_VIDEO_ROOT:-$(dirname "$0")/..}"
+# every displayed CJK character must be in the local font subset (rebuilt here when the text changed), or the render
+# would silently fall back to a system font for it. FONT_CHECK=0 skips.
+font_check() {
+  [[ "${FONT_CHECK:-1}" == 0 ]] && return 0
+  local m lang
+  for m in src/theme/fonts-*.json; do
+    [[ -e "$m" ]] || continue
+    lang=$(basename "$m" .json); lang=${lang#fonts-}
+    python3 scripts/zh_font_subset.py --check --lang "$lang" || { echo "font check failed: fix the characters above (or FONT_CHECK=0)"; exit 1; }
+  done
+}
+font_check
 mkdir -p out
 RAW="out/${NAME}_raw.mp4"
 ARGS=(--crf="${CRF:-15}" --log=error)

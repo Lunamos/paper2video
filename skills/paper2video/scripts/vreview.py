@@ -6,7 +6,7 @@ bundle per scene, tiled into one contact sheet per scene (270×480 cells).
 Usage: python3 scripts/vreview.py [--cut zh]  (use --cut en while the zh voice is not built yet: vo.zh.json is a placeholder until then)
        [--scenes s_intro,s_end] [--after 18] [--scale 0.5] [--out review/vertical]
 Look for: text outside the text-safe area or under the captions, more than ~3 elements, empty top/bottom bands
-(the picture should fill the frame), beats that miss their anchor.
+(the picture should fill the frame), beats that miss their anchor. Runs scripts/text_check.py --kinds vertical first.
 """
 import argparse
 import json
@@ -27,6 +27,9 @@ ap.add_argument("--scale", type=float, default=0.5)
 ap.add_argument("--out", default="review/vertical")
 a = ap.parse_args()
 
+# typography first (cheap): caption layout rules + font coverage, reported, not fatal; never rebuilds fonts here
+# (a render may be reading public/)
+subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve().parent / "text_check.py"), "--cut", a.cut, "--no-fetch", "--kinds", "vertical"], cwd=ROOT)
 reg = (ROOT / "src/vertical/scenes/registry.ts").read_text()
 names = dict(re.findall(r'id: "([^"]+)", name: "([^"]+)"', reg))
 vo = json.loads((ROOT / f"public/data/vo.{a.cut}.json").read_text())

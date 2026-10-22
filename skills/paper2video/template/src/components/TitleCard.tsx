@@ -19,6 +19,11 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import { AbsoluteFill, continueRender, delayRender, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { appear, prog } from "./core";
 import { color, ease, font } from "../theme";
+import { typo, Words } from "../typography/ZhText";
+
+// author lists break between names, never inside one ("Yuri / Burda")
+const names = (s: string) =>
+  s.split(/(\s*[,，、;；]\s*|\s+and\s+|\s*&\s*)/).map((part, i) => (i % 2 ? part : <span key={i} style={{ whiteSpace: "nowrap" }}>{part}</span>));
 
 export type TitleCardProps = {
   kicker?: string; // e.g. "arXiv 2603.12228 · 2026" or "NeurIPS 2025"
@@ -196,23 +201,24 @@ export const TitleCard: React.FC<TitleCardProps> = ({
               letterSpacing: "-0.02em",
               color: hot,
               textShadow: hot !== color.text ? `0 0 60px ${hot}55` : undefined,
+              ...typo.block,
               ...appear(pT, 24),
             }}
           >
-            {title}
+            <Words>{title}</Words>
           </div>
           {subtitle ? (
-            <div style={{ marginTop: wide ? 18 : 22, fontFamily: font.serif, fontSize: cap(subtitleSize, WIDE.subtitle, vertical ? 52 : 46), lineHeight: 1.25, color: color.text2, maxWidth: vertical ? width : 1300, ...appear(pS) }}>
-              {subtitle}
+            <div style={{ marginTop: wide ? 18 : 22, fontFamily: font.serif, fontSize: cap(subtitleSize, WIDE.subtitle, vertical ? 52 : 46), lineHeight: 1.25, color: color.text2, maxWidth: vertical ? width : 1300, ...typo.block, ...appear(pS) }}>
+              <Words>{subtitle}</Words>
             </div>
           ) : null}
         </div>
         <div style={{ marginTop: vertical ? 70 : wide ? 44 : 54, ...appear(pA) }}>
-          <div style={{ fontFamily: font.sans, fontWeight: 600, fontSize: cap(authorsSize, WIDE.authors, vertical ? 62 : 44), lineHeight: 1.35, color: color.text }}>{authors}</div>
-          {affiliation ? <div style={{ marginTop: 10, fontFamily: font.sans, fontSize: vertical ? 52 : wide ? 32 : 34, color: color.accent }}>{affiliation}</div> : null}
+          <div style={{ fontFamily: font.sans, fontWeight: 600, fontSize: cap(authorsSize, WIDE.authors, vertical ? 62 : 44), lineHeight: 1.35, color: color.text, ...typo.block }}>{names(authors)}</div>
+          {affiliation ? <div style={{ marginTop: 10, fontFamily: font.sans, fontSize: vertical ? 52 : wide ? 32 : 34, color: color.accent, ...typo.block }}><Words>{affiliation}</Words></div> : null}
         </div>
         {claim ? (
-          <div style={{ marginTop: vertical ? 70 : wide ? 40 : 50, fontFamily: font.sans, fontSize: cap(claimSize, WIDE.claim, vertical ? 64 : 40), lineHeight: 1.35, color: color.text, ...appear(pC) }}>{claim}</div>
+          <div style={{ marginTop: vertical ? 70 : wide ? 40 : 50, fontFamily: font.sans, fontSize: cap(claimSize, WIDE.claim, vertical ? 64 : 40), lineHeight: 1.35, color: color.text, ...typo.block, ...appear(pC) }}><Words>{claim}</Words></div>
         ) : null}
         {note ? (
           <div style={{ marginTop: vertical ? 50 : wide ? 30 : 36, fontFamily: font.mono, fontSize: vertical ? 30 : 19, letterSpacing: "0.12em", textTransform: "uppercase", color: color.text3, opacity: pA }}>

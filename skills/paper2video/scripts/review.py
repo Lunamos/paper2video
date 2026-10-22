@@ -7,6 +7,7 @@ Usage: python3 scripts/review.py <CompositionId> <cut> [--scenes s_intro,s_end] 
   e.g. python3 scripts/review.py VIDEO-ZH zh --scenes s_method
 Needs the composition's frames to be laid out by public/data/vo.<cut>.json (as the template does).
 Prints the sheet paths; open them and look for overlaps, clipping, empty frames, illegible or off-message text.
+Runs scripts/text_check.py for the cut first (caption typography, font coverage; reported, not fatal).
 """
 import argparse
 import os
@@ -27,6 +28,9 @@ ap.add_argument("--out", default="review")
 ap.add_argument("--per-sheet", type=int, default=12)
 a = ap.parse_args()
 
+# typography first (cheap): caption layout rules + font coverage, reported, not fatal; never rebuilds fonts here
+# (a render may be reading public/)
+subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve().parent / "text_check.py"), "--cut", a.cut, "--no-fetch"], cwd=ROOT)
 fps = project_fps()
 only = set(a.scenes.split(",")) if a.scenes else None
 plan = []  # (frame, label, scene)

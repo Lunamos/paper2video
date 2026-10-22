@@ -4,9 +4,38 @@ Reference point: 3Blue1Brown — dark background, few colours with fixed meaning
 
 ## Design system (in `template/src/theme`)
 - Near-black background, greys for structure, **two or three semantic colours** with one meaning each for the whole film (e.g. "our method", "the thing being changed", "readable/active"). Categorical palettes only inside data charts.
-- Type: a serif for headlines, a clean sans for UI, a mono for sources/data labels, KaTeX for formulas (copy the paper's notation exactly). CJK: local subset of Noto Sans SC (`scripts/zh_font_subset.py`, re-run after changing Chinese text).
+- Type: a serif for headlines, a clean sans for UI, a mono for sources/data labels, KaTeX for formulas (copy the paper's notation exactly). CJK: local subset of Noto Sans SC (`scripts/zh_font_subset.py`; `finalize.sh` / `covers.sh` rebuild it when the text changed and stop on any glyph it lacks). Text layout: see Typography.
 - Every data shot has a small source line bottom-left (PAPER Fig. 3 · model · metric · n); illustrations say SCHEMATIC; selected examples say so.
 - Keep content above the caption band; captions are global.
+
+## Typography (captions, cards, headlines; required)
+Viewers notice bad line breaks at once (a last character alone on a line, a word torn in two, a line starting with
+「，」). The template enforces these rules — `src/typography/` for captions (both cuts) and for text blocks via `<Words>` +
+`typo.block` (built into `Headline`, `TitleCard`, `VHead`, `VSub`; use them for any other wrapping text) — and
+`scripts/text_check.py` reports what is still broken; fix every ERROR before rendering.
+- **Break at punctuation / clause boundaries first**, else between words, **never inside a word**: Chinese words come
+  from jieba (`scripts/zh_breaks.py`, re-run after every Chinese voice build and after changing Chinese text in `src/`)
+  intersected with the browser's segmenter; names, numbers with units (「1000 步」「第 3」「一千到一万」「7B」), Latin words and
+  model names (「Llama 3」「GPT-4o」) stay whole. Words jieba gets wrong go into `notes/zh_words.txt` or `keyTerms`.
+- **Kinsoku**: no line starts with closing punctuation (，。、；：！？）》」』”’…—), none ends with opening punctuation
+  (（《「『“‘).
+- **No orphans**: the last line has ≥ 3 CJK characters and ≥ ~35 % of the line above; **balanced lines** (as even as
+  possible, top line equal or slightly longer) — like `text-wrap: balance`, but word- and punctuation-aware. A short
+  phrase in a wide box is balanced by narrowing it, not left ragged.
+- **Near fit**: a line over the measure by 1–2 characters may run up to 10 % long (font −6 % at most, then the box
+  widens) instead of wrapping onto a near-empty line.
+- **Captions**: ≤ 1 line per page at 16:9 (≤ 18 Chinese / ≈ 58 Latin characters), ≤ 2 lines × 9 at 9:16; what does not
+  fit becomes the next timed caption, split at a clause — never crammed or shrunk to fit. If a line cannot obey the
+  rules (`forced` / `overflow` in the check), shorten or split it in `scenes.json`.
+- **No hanging punctuation**: Chinese captions show no trailing ，。 (inner ones become a gap — the usual Chinese
+  subtitle convention, also in the SRT); centred text drops a trailing ，。、；： too (Chrome cannot hang it, and it
+  shifts the optical centre). Write headlines without a final 。.
+- **Mixed scripts**: a thin space between CJK and Latin / digits (`text-autospace`, set by `typo`); don't type
+  spaces by hand around English inside Chinese on-screen text.
+- **Fonts**: every displayed character must be in the font. The subset covers everything the Latin fonts don't (CJK,
+  full-width punctuation, Greek, arrows, maths) from `scenes.json`, `public/data/*.json` and `src/`; a character the
+  font lacks fails the check with its code point and file — replace it (e.g. 10⁶ → KaTeX `10^{6}`) instead of letting it
+  fall back to a system font.
 
 ## Motion rules
 - Only `useCurrentFrame()` + `interpolate`/`spring` (no CSS transitions); seeded randomness only.
@@ -33,5 +62,5 @@ The films people liked most are dense data visualisation: every scene has one ma
 - 2.5D perspective via CSS 3D transforms or a small projection helper is usually enough; reach for WebGL (`@remotion/three`) only for genuinely 3D or very dense scenes (text in WebGL is worse, renders are slower).
 
 ## Review loop
-- Render stills in every language at anchor-based frames (a few per scene), tile them into contact sheets (`scripts/review.py`), and actually look. Check: overlaps, clipping, text too small, empty or half-built frames at the moments the voice talks about them, captions colliding with source lines, layout breaking with longer translations.
+- Render stills in every language at anchor-based frames (a few per scene), tile them into contact sheets (`scripts/review.py`), and actually look. Check: overlaps, clipping, text too small, empty or half-built frames at the moments the voice talks about them, captions colliding with source lines, layout breaking with longer translations, line breaks (orphans, split words, a line starting with punctuation; `review.py` runs `text_check.py` first).
 - When the user reports a problem at a timestamp, map it to the scene and anchor (`scripts/timeline_info.py`), extract the real frames from the rendered MP4 (not just stills) and compare consecutive frames if it is about motion or jitter.

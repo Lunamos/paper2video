@@ -23,12 +23,16 @@ vertical moments are ones only a tall frame can do (see "Vertical-native visuals
   beyond) → captions (y ≈ 1300–1500). Compose vertically: stacks, columns, towers, horizontal bars stacked down the
   screen, big objects that run off the frame edges — not a 16:9 chart shrunk into the middle.
 - Sizes at 1080 wide: headline 100–140 px bold; key phrase 72–96 px; hero number 180–260 px; labels ≥ 44 px (never
-  < 36); captions 60–72 px bold with a dark stroke, ≤ 2 lines, ≈ 9–10 Chinese characters or ≈ 18 Latin characters per
-  line, broken between words, Chinese punctuation replaced by spaces. For Chinese, precompute word boundaries with jieba
-  (a small script over the caption words of `vo.zh.json` → a JSON table of allowed break offsets per line): the
-  renderer's `Intl.Segmenter` splits e.g. 金门大桥 as 金门|大|桥, which puts 「桥」 alone on the next caption page.
-  A timed "word" that holds a list (「wait、however、suppose」) is split after 、/，/, into pieces with the same timing,
-  so the caption can break inside the list instead of shrinking the whole page (numbers like 65,537 stay whole).
+  < 36); captions 60–72 px bold with a dark stroke, ≤ 2 lines, ≈ 9 Chinese characters or ≈ 18 Latin characters per
+  line, laid out by the typography rules (`reference/visual-style.md` "Typography"): clause boundaries first, never
+  inside a word (jieba ∩ the browser's segmenter: `Intl.Segmenter` alone splits 金门大桥 as 金门|大|桥, jieba alone
+  很|久), kinsoku, no orphan (last line ≥ 3 characters and ≥ ~35 % of the first), the two lines balanced (top equal or
+  longer), Chinese ，。 dropped at line ends and shown as a gap inside a line. A line may run ≤ 10 % long (font −6 %,
+  then the box widens); anything longer becomes the next caption page at a clause. A timed "word" holding a list
+  (「wait、however、suppose」) or a run without a space after 。 is split into pieces with the same timing so the caption
+  can break there (65,537 and GPT-4o stay whole).
+- Headlines and sub-lines (`VHead`, `VSub`) follow the same rules: words kept whole, balanced lines, no trailing 。, a
+  headline 1–2 characters too long for one line stays on one line (slightly smaller) instead of stranding them.
 - The only small text: the source line (≈ 26 px) and honesty chips (≈ 34 px) — rigor survives the format change.
 - Usually at most three elements at once (focus, one label or headline, the caption), one thing moving at a time —
   break this when a vertical-only effect needs it.
@@ -80,8 +84,9 @@ button or line being described, and keep its content clear of the caption band.
 - `VKit.tsx`: `VHead` (headline), `Hot` (accent word), `VSub`, `VChip` (honesty tag), `VSource` / `VSourceLines`
   (source lines with a dark halo), `VBigNumber` (final value only), `VPanel`, `VBackdrop` (a full-frame backdrop — the
   16:9 grain layer would stop at y = 1080).
-- `VCaptions.tsx`: ≤ 2 lines, words bright as spoken, broken between words (Chinese: `scripts/zh_breaks.py` →
-  `public/data/zh_breaks.json`, run after every Chinese voice build), auto-shrinks a page that would not fit.
+- `VCaptions.tsx`: ≤ 2 lines, words bright as spoken, laid out by `src/typography/captions.ts` (Chinese words:
+  `scripts/zh_breaks.py` → `public/data/zh_breaks.json`, run after every Chinese voice build); check with
+  `python3 scripts/text_check.py --kinds vertical` (`vreview.py` runs it first) and fix every ERROR.
 - `VerticalFilm.tsx`: the vertical timeline (the cut's scenes minus `V_DROP`, back to back, each keeping its anchors),
   voice per scene, SFX resolved on the vertical timeline, and the music played **per scene from that scene's position in
   the original score** (10-frame fades where the cut jumps over a left-out scene) — no new music file. Compositions

@@ -1,12 +1,15 @@
 // Shared building blocks for the vertical (9:16) scenes: big headline, accent word, sub-line, honesty chip, source
 // line(s), big number, panel, full-frame backdrop. Owned by the lead; scene agents import them read-only.
-import React from "react";
+import React, { useRef } from "react";
 import { AbsoluteFill } from "remotion";
 import { appear } from "../components/core";
 import { color, font } from "../theme";
+import { textOf, typo, useNearFit, Words } from "../typography/ZhText";
 import { CONTENT, HEAD, SAFE, STAGE, VT } from "./layout";
 
-/** Huge keyword / headline. `hot` words in the flow colour. Centred in the safe width unless `align="left"`. */
+/** Huge keyword / headline. `hot` words in the flow colour. Centred in the safe width unless `align="left"`.
+ * Typography (typography/ZhText.tsx): words never split, balanced lines, no trailing ，。; a headline that overflows
+ * one line by ≤ 10 % stays on one line (font −6 % at most, then the box widens). */
 export const VHead: React.FC<{
   children: React.ReactNode;
   p?: number;
@@ -15,35 +18,42 @@ export const VHead: React.FC<{
   color?: string;
   align?: "center" | "left";
   zh?: boolean;
-}> = ({ children, p = 1, y = HEAD.y, size = VT.head, color: c = color.text, align = "center", zh = true }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: SAFE.left,
-      width: SAFE.right - SAFE.left,
-      top: y,
-      textAlign: align,
-      fontFamily: zh ? font.zh : font.sans,
-      fontWeight: 900,
-      fontSize: size,
-      lineHeight: 1.12,
-      letterSpacing: zh ? "0.01em" : "-0.03em",
-      color: c,
-      // full-frame pictures run under the headline: a soft dark halo keeps it readable
-      textShadow: "0 0 28px rgba(11,14,19,0.85), 0 0 8px rgba(11,14,19,0.9)",
-      ...appear(p, 24),
-    }}
-  >
-    {children}
-  </div>
-);
+}> = ({ children, p = 1, y = HEAD.y, size = VT.head, color: c = color.text, align = "center", zh = true }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const fit = useNearFit(ref, textOf(children));
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute",
+        left: SAFE.left - (align === "center" ? fit.widen / 2 : 0),
+        width: SAFE.right - SAFE.left + fit.widen,
+        top: y,
+        textAlign: align,
+        fontFamily: zh ? font.zh : font.sans,
+        fontWeight: 900,
+        fontSize: size * fit.scale,
+        lineHeight: 1.12,
+        letterSpacing: zh ? "0.01em" : "-0.03em",
+        color: c,
+        ...typo.block,
+        whiteSpace: fit.one ? "nowrap" : undefined,
+        // full-frame pictures run under the headline: a soft dark halo keeps it readable
+        textShadow: "0 0 28px rgba(11,14,19,0.85), 0 0 8px rgba(11,14,19,0.9)",
+        ...appear(p, 24),
+      }}
+    >
+      <Words>{children}</Words>
+    </div>
+  );
+};
 
 /** A word or phrase in the flow (FLAS) colour, with glow. */
 export const Hot: React.FC<{ children: React.ReactNode; c?: string; glow?: string }> = ({ children, c = color.accent, glow = color.accentGlow }) => (
   <span style={{ color: c, textShadow: `0 0 40px ${glow}` }}>{children}</span>
 );
 
-/** Secondary line under a headline. */
+/** Secondary line under a headline (same typography as `VHead`). */
 export const VSub: React.FC<{ children: React.ReactNode; p?: number; y: number; size?: number; zh?: boolean; c?: string }> = ({
   children,
   p = 1,
@@ -51,25 +61,32 @@ export const VSub: React.FC<{ children: React.ReactNode; p?: number; y: number; 
   size = VT.sub,
   zh = true,
   c = color.text2,
-}) => (
-  <div
-    style={{
-      position: "absolute",
-      left: SAFE.left,
-      width: SAFE.right - SAFE.left,
-      top: y,
-      textAlign: "center",
-      fontFamily: zh ? font.zh : font.sans,
-      fontWeight: 700,
-      fontSize: size,
-      lineHeight: 1.25,
-      color: c,
-      ...appear(p, 16),
-    }}
-  >
-    {children}
-  </div>
-);
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const fit = useNearFit(ref, textOf(children));
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute",
+        left: SAFE.left - fit.widen / 2,
+        width: SAFE.right - SAFE.left + fit.widen,
+        top: y,
+        textAlign: "center",
+        fontFamily: zh ? font.zh : font.sans,
+        fontWeight: 700,
+        fontSize: size * fit.scale,
+        lineHeight: 1.25,
+        color: c,
+        ...typo.block,
+        whiteSpace: fit.one ? "nowrap" : undefined,
+        ...appear(p, 16),
+      }}
+    >
+      <Words>{children}</Words>
+    </div>
+  );
+};
 
 /** Small honesty tag (SCHEMATIC / 示意图 / 精选样例 / 演示). Still readable on a phone. */
 export const VChip: React.FC<{ children: React.ReactNode; p?: number; x?: number; y: number; c?: string }> = ({
