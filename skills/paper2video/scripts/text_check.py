@@ -23,6 +23,8 @@ INFO (file only)
 Usage: python3 scripts/text_check.py [--cut zh] [--kinds wide,vertical] [--no-fonts] [--no-fetch]
        full list -> review/text_check.<cut>.txt; prints a summary. Run it after zh_breaks.py, before rendering.
 """
+from __future__ import annotations  # PEP 604 annotations on the macOS system Python 3.9
+
 import argparse
 import hashlib
 import json

@@ -21,6 +21,8 @@ character the font lacks - such a glyph would silently fall back to a system fon
   python3 scripts/zh_font_subset.py [--lang zh] [--family "Noto Sans SC"] [--weights 400,500,700] [--hand "Long Cang"]
   python3 scripts/zh_font_subset.py --check [--lang zh] [--no-fetch]
 """
+from __future__ import annotations  # PEP 604 annotations on the macOS system Python 3.9
+
 import argparse
 import json
 import pathlib
