@@ -23,7 +23,7 @@ import { typo, Words } from "../typography/ZhText";
 
 // author lists break between names, never inside one ("Yuri / Burda")
 const names = (s: string) =>
-  s.split(/(\s*[,，、;；]\s*|\s+and\s+|\s*&\s*)/).map((part, i) => (i % 2 ? part : <span key={i} style={{ whiteSpace: "nowrap" }}>{part}</span>));
+  s.split(/(\s*[,，、;；]\s*|\s+·\s+|\s+and\s+|\s*&\s*)/).map((part, i) => (i % 2 ? part : <span key={i} style={{ whiteSpace: "nowrap" }}>{part}</span>));
 
 export type TitleCardProps = {
   kicker?: string; // e.g. "arXiv 2603.12228 · 2026" or "NeurIPS 2025"
