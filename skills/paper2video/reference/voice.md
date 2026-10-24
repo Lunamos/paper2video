@@ -74,7 +74,7 @@ Self-hosted voice cloning is free per take and can give a voice no catalogue has
 - Run the project's HTTP API (`api_v2.py`) bound to `127.0.0.1` with your own YAML config, and reach it through an ssh tunnel.
 - Use a start script that is idempotent (prints "already running"), picks the least-loaded GPU and waits until `/docs` answers. Don't probe `/tts` with no parameters: that raises a server error.
 - Pair it with an idle watchdog that stops the server after ~20 min without requests. Then several users can share it without one of them stopping it under the others, and the GPU is not held overnight.
-- `vo.py` with `ssh` + `startCmd` runs the start script and opens and closes its own tunnel.
+- `vo.py` with `ssh` + `startCmd` runs the start script when the server does not answer and opens and closes its own tunnel on a free local port (`url` then only names the remote port, or set `remotePort`). It never borrows another process's tunnel: several builds can share one server, and a borrowed tunnel vanished mid-response whenever its owner finished.
 
 **Batch synthesis without the server** (quick experiments): import the inference class (`TTS_infer_pack.TTS`), load once, loop over a JSON job list, write wavs. It is about 3× faster than real time on one A100 for a v2 model, using ~2 GB of VRAM.
 

@@ -319,6 +319,7 @@ GS_PARAMS = {"top_k": 5, "top_p": 0.8, "temperature": 0.7, "text_split_method": 
              "repetition_penalty": 1.35, "batch_size": 1, "split_bucket": False, "parallel_infer": True,
              "fragment_interval": 0.3}
 _tunnel = None
+_tunnel_url = None
 
 
 def gs_up(url) -> bool:
@@ -330,36 +331,53 @@ def gs_up(url) -> bool:
 
 
 def gs_ensure(cfg):
-    """Make the server reachable at cfg.url. If it is not and cfg.ssh is set: run cfg.startCmd on that host
-    (idempotent; it should start the server only if needed) and open our own tunnel, closed when vo.py exits.
-    Another process's tunnel on the same port is reused as is."""
-    global _tunnel
+    """Make the server reachable and return its local URL. Without cfg.ssh: cfg.url as is. With cfg.ssh: our own
+    ssh tunnel on a free local port (never another process's tunnel: several vo.py runs share one server, and a
+    borrowed tunnel disappears mid-response when its owner exits), running cfg.startCmd on that host first if the
+    server does not answer (idempotent; it should start the server only if needed). Closed when vo.py exits."""
+    global _tunnel, _tunnel_url
     import atexit
+    import socket
     import time
     url = cfg.get("url", "http://127.0.0.1:9880").rstrip("/")
-    if gs_up(url):
-        return url
     host = cfg.get("ssh")
     if not host:
+        if gs_up(url):
+            return url
         sys.exit(f"GPT-SoVITS server not reachable at {url} (start it, or set voices.<cut>.ssh / startCmd)")
+    if _tunnel is not None and _tunnel.poll() is None and gs_up(_tunnel_url):
+        return _tunnel_url
+    remote = cfg.get("remotePort", int(url.rsplit(":", 1)[1].split("/")[0]))
+
+    def open_tunnel():
+        global _tunnel, _tunnel_url
+        if _tunnel is not None and _tunnel.poll() is None:
+            _tunnel.terminate()
+        with socket.socket() as sk:
+            sk.bind(("127.0.0.1", 0))
+            port = sk.getsockname()[1]
+        _tunnel_url = f"http://127.0.0.1:{port}"
+        _tunnel = subprocess.Popen(["ssh", "-N", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=30",
+                                    "-L", f"{port}:127.0.0.1:{remote}", host],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(30):
+            if gs_up(_tunnel_url):
+                return True
+            time.sleep(0.5)
+        return False
+
+    atexit.register(lambda: _tunnel is not None and _tunnel.poll() is None and _tunnel.terminate())
+    if open_tunnel():
+        return _tunnel_url
     if cfg.get("startCmd"):
         print(f"   starting server: ssh {host} {cfg['startCmd']}")
         r = subprocess.run(["ssh", host, cfg["startCmd"]], capture_output=True, text=True, timeout=600)
         print("   " + (r.stdout.strip().splitlines() or ["(no output)"])[-1])
         if r.returncode:
             sys.exit(f"startCmd failed:\n{r.stdout[-800:]}{r.stderr[-800:]}")
-    port = int(url.rsplit(":", 1)[1].split("/")[0])
-    if _tunnel is not None and _tunnel.poll() is None:
-        _tunnel.terminate()
-    _tunnel = subprocess.Popen(["ssh", "-N", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=30",
-                                "-L", f"{port}:127.0.0.1:{cfg.get('remotePort', port)}", host],
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    atexit.register(lambda: _tunnel.poll() is None and _tunnel.terminate())
-    for _ in range(40):
-        if gs_up(url):
-            return url
-        time.sleep(0.5)
-    sys.exit(f"GPT-SoVITS server still not reachable at {url} after starting it and opening a tunnel to {host}")
+        if gs_up(_tunnel_url) or open_tunnel():
+            return _tunnel_url
+    sys.exit(f"GPT-SoVITS server not reachable through a tunnel to {host}:{remote} (after startCmd, if set)")
 
 
 def gs_request(cfg, text, lang, seed) -> dict:
@@ -406,7 +424,7 @@ def gs_synth(text, cfg, lang, seed):
                 if attempt == 3:
                     raise
                 time.sleep(5 * attempt)
-                url = gs_ensure(cfg)  # e.g. a borrowed tunnel went away mid-response
+                url = gs_ensure(cfg)  # e.g. the tunnel or the server went away mid-response
         if data[:4] != b"RIFF":
             sys.exit(f"GPT-SoVITS returned no WAV: {data[:200]!r}")
         d.mkdir(parents=True, exist_ok=True)
